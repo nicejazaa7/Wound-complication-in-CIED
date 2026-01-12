@@ -1,0 +1,1089 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>CIED Pocket Closure Data Entry</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <!-- Bootstrap for mobile-friendly layout -->
+  <link
+    href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
+    rel="stylesheet"
+  />
+  <style>
+    body { padding: 1rem; }
+    .record-row { cursor: pointer; }
+    .record-row:hover { background-color: #f5f5f5; }
+    .required::after {
+      content: " *";
+      color: red;
+    }
+    .word-counter { font-size: 0.85rem; }
+  </style>
+</head>
+
+<body>
+  <div class="container">
+    <h3 class="mb-3">CIED Pocket Closure – Data Entry (Local Only)</h3>
+    <p class="text-muted">
+      Data is saved <strong>only on this device</strong> (browser localStorage).
+      Remember to <strong>Export CSV</strong> regularly and send the file to the main researcher.
+    </p>
+
+    <!-- Controls -->
+    <div class="mb-3 d-flex flex-wrap gap-2">
+      <button id="btnNew" class="btn btn-secondary">New record</button>
+      <button id="btnSave" class="btn btn-primary">Save / Update</button>
+      <button id="btnDelete" class="btn btn-danger">Delete current</button>
+      <button id="btnExport" class="btn btn-success">Export CSV</button>
+    </div>
+
+    <div id="status" class="mb-3 text-primary"></div>
+
+    <!-- Form -->
+    <form id="dataForm" onsubmit="return false;">
+      <div class="row">
+        <div class="col-md-6">
+          <h5>Patient &amp; Procedure</h5>
+
+          <div class="mb-2">
+            <label class="form-label required" for="patient_code">Patient code</label>
+            <input type="text" id="patient_code" class="form-control" required />
+          </div>
+
+          <div class="mb-2">
+            <label class="form-label" for="op_date">Operation date (DD/MM/YYYY)</label>
+            <input type="text" id="op_date" class="form-control" placeholder="DD/MM/YYYY" />
+            <div class="form-text">
+              Type digits only (e.g. 29042536 → 29/04/1993).
+              If year &ge; 2200, it will be converted from B.E. to A.D. (−543).
+            </div>
+          </div>
+
+          <div class="mb-2">
+            <label class="form-label" for="age">Age (years)</label>
+            <input type="number" id="age" class="form-control" min="15" max="110" />
+            <div class="form-text">Only 15–110 allowed.</div>
+          </div>
+
+          <div class="mb-2">
+            <label class="form-label" for="sex">Sex</label>
+            <select id="sex" class="form-select">
+              <option value=""></option>
+              <option value="Male">Male</option>
+              <option value="Female">Female</option>
+            </select>
+          </div>
+
+          <div class="mb-2">
+            <label class="form-label" for="weight">Weight (kg)</label>
+            <input type="number" step="0.1" id="weight" class="form-control" />
+          </div>
+
+          <div class="mb-2">
+            <label class="form-label" for="height">Height (cm)</label>
+            <input type="number" step="0.1" id="height" class="form-control" />
+          </div>
+
+          <div class="mb-2">
+            <label class="form-label" for="bmi">BMI (kg/m², auto)</label>
+            <input type="number" step="0.1" id="bmi" class="form-control" readonly />
+          </div>
+
+          <div class="mb-2">
+            <label class="form-label" for="lvef">LVEF (%)</label>
+            <input type="number" id="lvef" class="form-control" min="1" max="99" />
+          </div>
+
+          <div class="mb-2">
+            <label class="form-label">Comorbidities</label>
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" id="dm" />
+              <label class="form-check-label" for="dm">Diabetes</label>
+            </div>
+            <div class="ms-3 mb-2" id="a1c_container" style="display:none;">
+              <label class="form-label" for="hba1c">HbA1c (%)</label>
+              <input type="number" step="0.1" id="hba1c" class="form-control" min="1" max="20" />
+            </div>
+
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" id="rrt" />
+              <label class="form-check-label" for="rrt">RRT (dialysis)</label>
+            </div>
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" id="cad" />
+              <label class="form-check-label" for="cad">CAD</label>
+            </div>
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" id="hf" />
+              <label class="form-check-label" for="hf">Heart failure</label>
+            </div>
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" id="af" />
+              <label class="form-check-label" for="af">Atrial fibrillation</label>
+            </div>
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" id="cld" />
+              <label class="form-check-label" for="cld">Chronic liver disease</label>
+            </div>
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" id="malignancy" />
+              <label class="form-check-label" for="malignancy">Active malignancy</label>
+            </div>
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" id="immunosuppression" />
+              <label class="form-check-label" for="immunosuppression">Immunosuppression</label>
+            </div>
+          </div>
+
+          <div class="mb-2 form-check">
+            <input class="form-check-input" type="checkbox" id="infection_1m" />
+            <label class="form-check-label" for="infection_1m">
+              Any infection requiring antibiotics 1 month before operation
+            </label>
+          </div>
+        </div>
+
+        <div class="col-md-6">
+          <h5>Antithrombotic &amp; Procedure</h5>
+
+          <div class="mb-2">
+            <label class="form-label" for="anticoagulant_type">Anticoagulant</label>
+            <select id="anticoagulant_type" class="form-select">
+              <option value="None">None</option>
+              <option value="NOAC">NOAC</option>
+              <option value="Warfarin">Warfarin</option>
+              <option value="LMWH/Heparin">LMWH/Heparin</option>
+            </select>
+          </div>
+
+          <div class="mb-2 form-check">
+            <input class="form-check-input" type="checkbox" id="bridging" />
+            <label class="form-check-label" for="bridging">Bridging anticoagulation</label>
+          </div>
+
+          <!-- UPDATED: Antiplatelet agents + "days held" appears per selected agent -->
+          <div class="mb-2">
+            <label class="form-label">Antiplatelet agents (tick all that apply)</label>
+
+            <div class="form-check">
+              <input class="form-check-input ap-agent" type="checkbox" id="ap_asa" />
+              <label class="form-check-label" for="ap_asa">ASA</label>
+            </div>
+            <div class="ms-4 mt-1 mb-2" id="ap_asa_hold_container" style="display:none;">
+              <label class="form-label" for="ap_asa_hold_days">Days held (ASA)</label>
+              <input type="number" id="ap_asa_hold_days" class="form-control" min="0" max="60" />
+              <div class="form-text">0–60 days</div>
+            </div>
+
+            <div class="form-check">
+              <input class="form-check-input ap-agent" type="checkbox" id="ap_clopidogrel" />
+              <label class="form-check-label" for="ap_clopidogrel">Clopidogrel</label>
+            </div>
+            <div class="ms-4 mt-1 mb-2" id="ap_clopidogrel_hold_container" style="display:none;">
+              <label class="form-label" for="ap_clopidogrel_hold_days">Days held (Clopidogrel)</label>
+              <input type="number" id="ap_clopidogrel_hold_days" class="form-control" min="0" max="60" />
+              <div class="form-text">0–60 days</div>
+            </div>
+
+            <div class="form-check">
+              <input class="form-check-input ap-agent" type="checkbox" id="ap_ticagrelor" />
+              <label class="form-check-label" for="ap_ticagrelor">Ticagrelor</label>
+            </div>
+            <div class="ms-4 mt-1 mb-2" id="ap_ticagrelor_hold_container" style="display:none;">
+              <label class="form-label" for="ap_ticagrelor_hold_days">Days held (Ticagrelor)</label>
+              <input type="number" id="ap_ticagrelor_hold_days" class="form-control" min="0" max="60" />
+              <div class="form-text">0–60 days</div>
+            </div>
+
+            <div class="form-check">
+              <input class="form-check-input ap-agent" type="checkbox" id="ap_prasugrel" />
+              <label class="form-check-label" for="ap_prasugrel">Prasugrel</label>
+            </div>
+            <div class="ms-4 mt-1 mb-2" id="ap_prasugrel_hold_container" style="display:none;">
+              <label class="form-label" for="ap_prasugrel_hold_days">Days held (Prasugrel)</label>
+              <input type="number" id="ap_prasugrel_hold_days" class="form-control" min="0" max="60" />
+              <div class="form-text">0–60 days</div>
+            </div>
+          </div>
+
+          <div class="mb-2">
+            <label class="form-label" for="suture_type">Suture type</label>
+            <select id="suture_type" class="form-select">
+              <option value=""></option>
+              <option value="Monocryl">Monocryl</option>
+              <option value="Vicryl">Vicryl</option>
+            </select>
+          </div>
+
+          <div class="mb-2">
+            <label class="form-label" for="procedure_time">Procedure time (minutes)</label>
+            <input type="number" id="procedure_time" class="form-control" min="0" max="600" />
+          </div>
+
+          <div class="mb-2">
+            <label class="form-label" for="pocket_location">Pocket location</label>
+            <select id="pocket_location" class="form-select">
+              <option value=""></option>
+              <option value="Rt subpectoral">Rt subpectoral</option>
+              <option value="Lt subpectoral">Lt subpectoral</option>
+              <option value="Rt prepectoral">Rt prepectoral</option>
+              <option value="Lt prepectoral">Lt prepectoral</option>
+              <option value="Others">Others</option>
+            </select>
+          </div>
+
+          <div class="mb-2">
+            <label class="form-label" for="procedure_type">Procedure type</label>
+            <select id="procedure_type" class="form-select">
+              <option value=""></option>
+              <option value="New PPM">New PPM</option>
+              <option value="New AICD">New AICD</option>
+              <option value="New CRTD">New CRTD</option>
+              <option value="Upgrade CRTD">Upgrade CRTD</option>
+              <option value="Generator Change">Generator Change</option>
+              <option value="Lead revision/Pocket relocation">Lead revision/Pocket relocation</option>
+              <option value="Others">Others</option>
+            </select>
+          </div>
+
+          <h5 class="mt-3">Follow-up &amp; Outcomes</h5>
+
+          <div class="mb-2">
+            <label class="form-label" for="fu_months">Follow-up duration (months)</label>
+            <input type="number" step="0.1" id="fu_months" class="form-control" />
+          </div>
+
+          <div class="mb-2 form-check">
+            <input class="form-check-input" type="checkbox" id="lost_to_fu" />
+            <label class="form-check-label" for="lost_to_fu">Lost to follow-up</label>
+          </div>
+
+          <!-- UPDATED: Outcomes -->
+          <div class="mb-2">
+            <label class="form-label">Composite outcome (choose one)</label>
+
+            <div class="form-check">
+              <input class="form-check-input" type="radio" name="composite_outcome" id="co_none" value="No complication" />
+              <label class="form-check-label" for="co_none">No complication</label>
+            </div>
+
+            <div class="form-check">
+              <input class="form-check-input" type="radio" name="composite_outcome" id="co_dehiscence" value="Wound dehiscence" />
+              <label class="form-check-label" for="co_dehiscence">Wound dehiscence</label>
+            </div>
+
+            <div class="form-check">
+              <input class="form-check-input" type="radio" name="composite_outcome" id="co_hematoma" value="Hematoma" />
+              <label class="form-check-label" for="co_hematoma">Hematoma</label>
+            </div>
+
+            <div class="form-check">
+              <input class="form-check-input" type="radio" name="composite_outcome" id="co_delay" value="Delay wound readiness" />
+              <label class="form-check-label" for="co_delay">Delay wound readiness</label>
+            </div>
+          </div>
+
+          <div class="mb-2">
+            <label class="form-label">Secondary outcome (tick all that apply)</label>
+
+            <div class="form-check">
+              <input class="form-check-input sec-outcome" type="checkbox" id="so_infection" />
+              <label class="form-check-label" for="so_infection">
+                Wound or device pocket infection requiring hospital admission, intravenous antibiotic therapy,
+                or invasive intervention (including incision and drainage, aspiration, or surgical exploration)
+              </label>
+            </div>
+            <div class="ms-4 mt-1 mb-2" id="so_infection_detail_container" style="display:none;">
+              <label class="form-label" for="so_infection_detail">Details (max 50 words)</label>
+              <textarea id="so_infection_detail" class="form-control" rows="3"></textarea>
+              <div class="form-text d-flex justify-content-between">
+                <span>Be specific (site, management, culture, etc.).</span>
+                <span class="word-counter" id="so_infection_counter">0 / 50 words</span>
+              </div>
+            </div>
+
+            <div class="form-check">
+              <input class="form-check-input sec-outcome" type="checkbox" id="so_hema_invasive" />
+              <label class="form-check-label" for="so_hema_invasive">
+                Hematoma requiring invasive management, including aspiration, evacuation, re-operation,
+                transfusion, or interruption or reversal of antithrombotic therapy.
+              </label>
+            </div>
+            <div class="ms-4 mt-1 mb-2" id="so_hema_invasive_detail_container" style="display:none;">
+              <label class="form-label" for="so_hema_invasive_detail">Details (max 50 words)</label>
+              <textarea id="so_hema_invasive_detail" class="form-control" rows="3"></textarea>
+              <div class="form-text d-flex justify-content-between">
+                <span>Specify what was done (aspiration/evacuation/hold meds/etc.).</span>
+                <span class="word-counter" id="so_hema_invasive_counter">0 / 50 words</span>
+              </div>
+            </div>
+          </div>
+
+          <h5 class="mt-3">Laboratory</h5>
+
+          <div class="mb-2">
+            <label class="form-label" id="lab_hb_label" for="lab_hb">Hb (g/dL)</label>
+            <input type="number" step="0.1" id="lab_hb" class="form-control" data-min="3" data-max="17" />
+          </div>
+          <div class="mb-2">
+            <label class="form-label" id="lab_wbc_label" for="lab_wbc">WBC (/µL)</label>
+            <input type="number" id="lab_wbc" class="form-control" data-min="1000" data-max="20000" />
+          </div>
+          <div class="mb-2">
+            <label class="form-label" id="lab_plt_label" for="lab_plt">Platelet (/µL)</label>
+            <input type="number" id="lab_plt" class="form-control" data-min="50000" data-max="1000000" />
+          </div>
+          <div class="mb-2">
+            <label class="form-label" id="lab_bun_label" for="lab_bun">BUN (mg/dL)</label>
+            <input type="number" step="0.1" id="lab_bun" class="form-control" data-min="3" data-max="150" />
+          </div>
+          <div class="mb-2">
+            <label class="form-label" id="lab_cr_label" for="lab_cr">Creatinine (mg/dL)</label>
+            <input type="number" step="0.01" id="lab_cr" class="form-control" data-min="0.2" data-max="5" />
+            <div class="form-text" id="egfr_display">
+              eGFR (CKD-EPI 2021): —
+            </div>
+          </div>
+          <div class="mb-2">
+            <label class="form-label" id="lab_pt_label" for="lab_pt">PT (sec)</label>
+            <input type="number" step="0.1" id="lab_pt" class="form-control" data-min="8" data-max="20" />
+          </div>
+          <div class="mb-2">
+            <label class="form-label" id="lab_ptt_label" for="lab_ptt">PTT (sec)</label>
+            <input type="number" step="0.1" id="lab_ptt" class="form-control" data-min="20" data-max="40" />
+          </div>
+          <div class="mb-2">
+            <label class="form-label" id="lab_inr_label" for="lab_inr">INR</label>
+            <input type="number" step="0.01" id="lab_inr" class="form-control" data-min="0.8" data-max="5" />
+          </div>
+        </div>
+      </div>
+    </form>
+
+    <hr class="my-4" />
+
+    <h5>Saved records on this device</h5>
+    <div class="table-responsive">
+      <table class="table table-sm table-bordered" id="recordsTable">
+        <thead class="table-light">
+          <tr>
+            <th>Patient code</th>
+            <th>Op date</th>
+            <th>Suture</th>
+            <th>Age</th>
+            <th>Composite outcome</th>
+          </tr>
+        </thead>
+        <tbody id="recordsBody">
+          <!-- Filled by JS -->
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <script>
+    const STORAGE_KEY = "cied_records_v3";
+
+    function loadRecords() {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (!raw) return [];
+      try {
+        return JSON.parse(raw);
+      } catch (e) {
+        console.error("Error parsing storage", e);
+        return [];
+      }
+    }
+
+    function saveRecords(records) {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(records));
+    }
+
+    function setStatus(msg, isError = false) {
+      const el = document.getElementById("status");
+      el.textContent = msg;
+      el.className = isError ? "mb-3 text-danger" : "mb-3 text-primary";
+    }
+
+    // Used when saving: clean up and normalize DD/MM/YYYY, convert BE->AD
+    function parseAndNormalizeDate(ddmmyyyy) {
+      if (!ddmmyyyy) return "";
+      const parts = ddmmyyyy.trim().split(/[\/\-\.]/);
+      if (parts.length !== 3) return ddmmyyyy.trim();
+
+      let [d, m, y] = parts.map(p => p.trim());
+      let day = parseInt(d, 10);
+      let month = parseInt(m, 10);
+      let year = parseInt(y, 10);
+
+      if (isNaN(day) || isNaN(month) || isNaN(year)) return ddmmyyyy.trim();
+
+      if (year >= 2200) year = year - 543; // BE -> AD
+
+      const dd = String(day).padStart(2, "0");
+      const mm = String(month).padStart(2, "0");
+      const yyyy = String(year).padStart(4, "0");
+      return `${dd}/${mm}/${yyyy}`;
+    }
+
+    // Used while typing: live formatter for DD/MM/YYYY with optional BE->AD
+    function formatOpDate() {
+      const input = document.getElementById("op_date");
+
+      let digits = input.value.replace(/\D/g, "");
+      if (digits.length > 8) digits = digits.slice(0, 8);
+
+      if (digits.length <= 2) {
+        input.value = digits;
+        return;
+      }
+
+      if (digits.length <= 4) {
+        let dd = digits.slice(0, 2);
+        let mm = digits.slice(2);
+
+        if (mm.length === 2) {
+          let mnum = parseInt(mm, 10);
+          if (mnum < 1) mnum = 1;
+          if (mnum > 12) mnum = 12;
+          mm = String(mnum).padStart(2, "0");
+        }
+
+        input.value = dd + "/" + mm;
+        return;
+      }
+
+      let dd = digits.slice(0, 2);
+      let mm = digits.slice(2, 4);
+      let yyyy = digits.slice(4);
+
+      if (dd.length === 2) {
+        let dnum = parseInt(dd, 10);
+        if (dnum < 1) dnum = 1;
+        if (dnum > 31) dnum = 31;
+        dd = String(dnum).padStart(2, "0");
+      }
+
+      if (mm.length === 2) {
+        let mnum = parseInt(mm, 10);
+        if (mnum < 1) mnum = 1;
+        if (mnum > 12) mnum = 12;
+        mm = String(mnum).padStart(2, "0");
+      }
+
+      if (yyyy.length === 4) {
+        let y = parseInt(yyyy, 10);
+        if (!isNaN(y) && y >= 2200) y = y - 543;
+        yyyy = String(y).padStart(4, "0");
+      }
+
+      let out = dd + "/" + mm;
+      if (yyyy.length > 0) out += "/" + yyyy;
+      input.value = out;
+    }
+
+    function getAntiplateletSelection() {
+      const ids = [
+        { id: "ap_asa", name: "ASA" },
+        { id: "ap_clopidogrel", name: "Clopidogrel" },
+        { id: "ap_ticagrelor", name: "Ticagrelor" },
+        { id: "ap_prasugrel", name: "Prasugrel" }
+      ];
+
+      const selected = [];
+      ids.forEach(x => {
+        if (document.getElementById(x.id).checked) selected.push(x.name);
+      });
+
+      return selected;
+    }
+
+    function setAntiplateletSelection(str) {
+      const ids = {
+        "ASA": "ap_asa",
+        "Clopidogrel": "ap_clopidogrel",
+        "Ticagrelor": "ap_ticagrelor",
+        "Prasugrel": "ap_prasugrel"
+      };
+      Object.values(ids).forEach(id => { document.getElementById(id).checked = false; });
+      if (!str) return;
+      const items = String(str).split(/[;,]/).map(s => s.trim()).filter(Boolean);
+      items.forEach(name => {
+        const id = ids[name];
+        if (id) document.getElementById(id).checked = true;
+      });
+      updateAllAntiplateletHeldVisibility();
+    }
+
+    function toggleA1C() {
+      const dm = document.getElementById("dm").checked;
+      const container = document.getElementById("a1c_container");
+      if (dm) {
+        container.style.display = "";
+      } else {
+        container.style.display = "none";
+        document.getElementById("hba1c").value = "";
+      }
+    }
+
+    function updateBMI() {
+      const w = parseFloat(document.getElementById("weight").value);
+      const h = parseFloat(document.getElementById("height").value);
+      const bmiInput = document.getElementById("bmi");
+      if (isFinite(w) && isFinite(h) && h > 0) {
+        const h_m = h / 100;
+        const bmi = w / (h_m * h_m);
+        bmiInput.value = bmi.toFixed(1);
+      } else {
+        bmiInput.value = "";
+      }
+    }
+
+    // ===== NEW: Show/Hide "days held" for each antiplatelet =====
+    function updateAntiplateletHeldVisibility(agentId, containerId, inputId) {
+      const checked = document.getElementById(agentId).checked;
+      const container = document.getElementById(containerId);
+      const input = document.getElementById(inputId);
+
+      if (checked) {
+        container.style.display = "";
+      } else {
+        container.style.display = "none";
+        input.value = "";
+      }
+    }
+
+    function updateAllAntiplateletHeldVisibility() {
+      updateAntiplateletHeldVisibility("ap_asa", "ap_asa_hold_container", "ap_asa_hold_days");
+      updateAntiplateletHeldVisibility("ap_clopidogrel", "ap_clopidogrel_hold_container", "ap_clopidogrel_hold_days");
+      updateAntiplateletHeldVisibility("ap_ticagrelor", "ap_ticagrelor_hold_container", "ap_ticagrelor_hold_days");
+      updateAntiplateletHeldVisibility("ap_prasugrel", "ap_prasugrel_hold_container", "ap_prasugrel_hold_days");
+    }
+
+    // ===== NEW: Composite outcome get/set =====
+    function getCompositeOutcome() {
+      const el = document.querySelector('input[name="composite_outcome"]:checked');
+      return el ? el.value : "";
+    }
+
+    function setCompositeOutcome(val) {
+      const radios = document.querySelectorAll('input[name="composite_outcome"]');
+      radios.forEach(r => { r.checked = false; });
+      if (!val) return;
+      const target = Array.from(radios).find(r => r.value === val);
+      if (target) target.checked = true;
+    }
+
+    // ===== NEW: Secondary outcomes detail box show/hide + 50 word limit =====
+    function toggleSecondaryDetail(checkboxId, containerId, textareaId, counterId) {
+      const checked = document.getElementById(checkboxId).checked;
+      const container = document.getElementById(containerId);
+      const textarea = document.getElementById(textareaId);
+
+      if (checked) {
+        container.style.display = "";
+      } else {
+        container.style.display = "none";
+        textarea.value = "";
+        updateWordCounter(textareaId, counterId);
+      }
+    }
+
+    function countWords(text) {
+      const words = String(text).trim().split(/\s+/).filter(Boolean);
+      return words.length;
+    }
+
+    function enforceMaxWords(textareaId, counterId, maxWords = 50) {
+      const ta = document.getElementById(textareaId);
+      let words = String(ta.value).trim().split(/\s+/).filter(Boolean);
+
+      if (words.length > maxWords) {
+        words = words.slice(0, maxWords);
+        ta.value = words.join(" ") + " ";
+      }
+      updateWordCounter(textareaId, counterId, maxWords);
+    }
+
+    function updateWordCounter(textareaId, counterId, maxWords = 50) {
+      const ta = document.getElementById(textareaId);
+      const c = document.getElementById(counterId);
+      const n = countWords(ta.value);
+      c.textContent = `${n} / ${maxWords} words`;
+    }
+
+    // ===== Existing lab helpers =====
+    function updateLabHighlight(idInput, idLabel) {
+      const input = document.getElementById(idInput);
+      const label = document.getElementById(idLabel);
+      const valStr = input.value;
+      if (!valStr) {
+        label.classList.remove("text-danger");
+        return;
+      }
+      const val = parseFloat(valStr);
+      const min = parseFloat(input.dataset.min);
+      const max = parseFloat(input.dataset.max);
+      if (!isFinite(val) || !isFinite(min) || !isFinite(max)) {
+        label.classList.remove("text-danger");
+        return;
+      }
+      if (val < min || val > max) label.classList.add("text-danger");
+      else label.classList.remove("text-danger");
+    }
+
+    function updateAllLabHighlighting() {
+      updateLabHighlight("lab_hb", "lab_hb_label");
+      updateLabHighlight("lab_wbc", "lab_wbc_label");
+      updateLabHighlight("lab_plt", "lab_plt_label");
+      updateLabHighlight("lab_bun", "lab_bun_label");
+      updateLabHighlight("lab_cr", "lab_cr_label");
+      updateLabHighlight("lab_pt", "lab_pt_label");
+      updateLabHighlight("lab_ptt", "lab_ptt_label");
+      updateLabHighlight("lab_inr", "lab_inr_label");
+    }
+
+    function updateEGFR() {
+      const cr = parseFloat(document.getElementById("lab_cr").value);
+      const age = parseFloat(document.getElementById("age").value);
+      const sex = document.getElementById("sex").value;
+      const egfrDisplay = document.getElementById("egfr_display");
+
+      if (!isFinite(cr) || !isFinite(age) || !sex) {
+        egfrDisplay.textContent = "eGFR (CKD-EPI 2021): —";
+        egfrDisplay.dataset.egfr = "";
+        return;
+      }
+
+      // CKD-EPI 2021 (non-race)
+      let k, a;
+      let sexFactor = 1.0;
+      if (sex === "Female") {
+        k = 0.7;
+        a = -0.241;
+        sexFactor = 1.012;
+      } else {
+        k = 0.9;
+        a = -0.302;
+        sexFactor = 1.0;
+      }
+
+      const scr_k = cr / k;
+      const minPart = Math.min(scr_k, 1) ** a;
+      const maxPart = Math.max(scr_k, 1) ** -1.200;
+      const egfr = 142 * minPart * maxPart * (0.9938 ** age) * sexFactor;
+      const egfrRounded = Math.round(egfr);
+
+      egfrDisplay.textContent =
+        "eGFR (CKD-EPI 2021): " + egfrRounded + " mL/min/1.73m²";
+      egfrDisplay.dataset.egfr = egfrRounded;
+    }
+
+    // ===== UPDATED: Form <-> Record =====
+    function formToRecord() {
+      const get = id => document.getElementById(id);
+
+      const patient_code = get("patient_code").value.trim();
+      const ageVal = get("age").value;
+      const age = ageVal === "" ? "" : Number(ageVal);
+
+      if (!patient_code) {
+        setStatus("Patient code is required.", true);
+        return null;
+      }
+      if (age !== "" && (age < 15 || age > 110)) {
+        setStatus("Age must be between 15 and 110.", true);
+        return null;
+      }
+
+      const lvefVal = get("lvef").value;
+      const lvef = lvefVal === "" ? "" : Number(lvefVal);
+      if (lvef !== "" && (lvef < 1 || lvef > 99)) {
+        setStatus("LVEF must be between 1 and 99%.", true);
+        return null;
+      }
+
+      const hba1cVal = get("hba1c").value;
+      const dmChecked = get("dm").checked;
+      const hba1c = hba1cVal === "" ? "" : Number(hba1cVal);
+      if (dmChecked && hba1c !== "" && (hba1c < 1 || hba1c > 20)) {
+        setStatus("HbA1c must be between 1 and 20%.", true);
+        return null;
+      }
+
+      const opDateRaw = get("op_date").value;
+      const op_date = parseAndNormalizeDate(opDateRaw);
+
+      // Antiplatelet held days validation (only if checked)
+      const heldFields = [
+        { cb: "ap_asa", days: "ap_asa_hold_days", label: "ASA" },
+        { cb: "ap_clopidogrel", days: "ap_clopidogrel_hold_days", label: "Clopidogrel" },
+        { cb: "ap_ticagrelor", days: "ap_ticagrelor_hold_days", label: "Ticagrelor" },
+        { cb: "ap_prasugrel", days: "ap_prasugrel_hold_days", label: "Prasugrel" }
+      ];
+      for (const f of heldFields) {
+        if (get(f.cb).checked) {
+          const v = get(f.days).value;
+          if (v !== "") {
+            const n = Number(v);
+            if (!Number.isFinite(n) || n < 0 || n > 60) {
+              setStatus(`Days held (${f.label}) must be between 0 and 60.`, true);
+              return null;
+            }
+          }
+        }
+      }
+
+      const record = {
+        patient_code,
+        op_date,
+        age: age === "" ? "" : age,
+        sex: get("sex").value,
+        weight: get("weight").value || "",
+        height: get("height").value || "",
+        bmi: get("bmi").value || "",
+        lvef: lvef === "" ? "" : lvef,
+        dm: dmChecked ? 1 : 0,
+        hba1c: hba1c === "" ? "" : hba1c,
+        rrt: get("rrt").checked ? 1 : 0,
+        cad: get("cad").checked ? 1 : 0,
+        hf: get("hf").checked ? 1 : 0,
+        af: get("af").checked ? 1 : 0,
+        cld: get("cld").checked ? 1 : 0,
+        malignancy: get("malignancy").checked ? 1 : 0,
+        immunosuppression: get("immunosuppression").checked ? 1 : 0,
+        infection_1m: get("infection_1m").checked ? 1 : 0,
+
+        anticoagulant_type: get("anticoagulant_type").value,
+        bridging: get("bridging").checked ? 1 : 0,
+
+        antiplatelet_agents: getAntiplateletSelection().join(";"),
+        ap_asa_hold_days: get("ap_asa").checked ? (get("ap_asa_hold_days").value || "") : "",
+        ap_clopidogrel_hold_days: get("ap_clopidogrel").checked ? (get("ap_clopidogrel_hold_days").value || "") : "",
+        ap_ticagrelor_hold_days: get("ap_ticagrelor").checked ? (get("ap_ticagrelor_hold_days").value || "") : "",
+        ap_prasugrel_hold_days: get("ap_prasugrel").checked ? (get("ap_prasugrel_hold_days").value || "") : "",
+
+        suture_type: get("suture_type").value,
+        procedure_time: get("procedure_time").value || "",
+        pocket_location: get("pocket_location").value,
+        procedure_type: get("procedure_type").value,
+
+        fu_months: get("fu_months").value || "",
+        lost_to_fu: get("lost_to_fu").checked ? 1 : 0,
+
+        composite_outcome: getCompositeOutcome(),
+
+        so_infection: get("so_infection").checked ? 1 : 0,
+        so_infection_detail: get("so_infection").checked ? (get("so_infection_detail").value || "") : "",
+
+        so_hema_invasive: get("so_hema_invasive").checked ? 1 : 0,
+        so_hema_invasive_detail: get("so_hema_invasive").checked ? (get("so_hema_invasive_detail").value || "") : "",
+
+        lab_hb: get("lab_hb").value || "",
+        lab_wbc: get("lab_wbc").value || "",
+        lab_plt: get("lab_plt").value || "",
+        lab_bun: get("lab_bun").value || "",
+        lab_cr: get("lab_cr").value || "",
+        lab_pt: get("lab_pt").value || "",
+        lab_ptt: get("lab_ptt").value || "",
+        lab_inr: get("lab_inr").value || "",
+        egfr: get("egfr_display").dataset.egfr || ""
+      };
+
+      return record;
+    }
+
+    function recordToForm(rec) {
+      const set = (id, val) => { document.getElementById(id).value = val ?? ""; };
+      const setCheck = (id, val) => { document.getElementById(id).checked = !!val; };
+
+      set("patient_code", rec.patient_code || "");
+      set("op_date", rec.op_date || "");
+      set("age", rec.age === "" ? "" : rec.age);
+      set("sex", rec.sex || "");
+      set("weight", rec.weight || "");
+      set("height", rec.height || "");
+      set("bmi", rec.bmi || "");
+      set("lvef", rec.lvef === "" ? "" : rec.lvef);
+
+      setCheck("dm", rec.dm);
+      set("hba1c", rec.hba1c === "" ? "" : rec.hba1c);
+      toggleA1C();
+
+      setCheck("rrt", rec.rrt);
+      setCheck("cad", rec.cad);
+      setCheck("hf", rec.hf);
+      setCheck("af", rec.af);
+      setCheck("cld", rec.cld);
+      setCheck("malignancy", rec.malignancy);
+      setCheck("immunosuppression", rec.immunosuppression);
+      setCheck("infection_1m", rec.infection_1m);
+
+      set("anticoagulant_type", rec.anticoagulant_type || "None");
+      setCheck("bridging", rec.bridging);
+
+      setAntiplateletSelection(rec.antiplatelet_agents || "");
+      set("ap_asa_hold_days", rec.ap_asa_hold_days || "");
+      set("ap_clopidogrel_hold_days", rec.ap_clopidogrel_hold_days || "");
+      set("ap_ticagrelor_hold_days", rec.ap_ticagrelor_hold_days || "");
+      set("ap_prasugrel_hold_days", rec.ap_prasugrel_hold_days || "");
+      updateAllAntiplateletHeldVisibility();
+
+      set("suture_type", rec.suture_type || "");
+      set("procedure_time", rec.procedure_time || "");
+      set("pocket_location", rec.pocket_location || "");
+      set("procedure_type", rec.procedure_type || "");
+      set("fu_months", rec.fu_months || "");
+      setCheck("lost_to_fu", rec.lost_to_fu);
+
+      setCompositeOutcome(rec.composite_outcome || "");
+
+      setCheck("so_infection", rec.so_infection);
+      set("so_infection_detail", rec.so_infection_detail || "");
+      toggleSecondaryDetail("so_infection", "so_infection_detail_container", "so_infection_detail", "so_infection_counter");
+      updateWordCounter("so_infection_detail", "so_infection_counter");
+
+      setCheck("so_hema_invasive", rec.so_hema_invasive);
+      set("so_hema_invasive_detail", rec.so_hema_invasive_detail || "");
+      toggleSecondaryDetail("so_hema_invasive", "so_hema_invasive_detail_container", "so_hema_invasive_detail", "so_hema_invasive_counter");
+      updateWordCounter("so_hema_invasive_detail", "so_hema_invasive_counter");
+
+      set("lab_hb", rec.lab_hb || "");
+      set("lab_wbc", rec.lab_wbc || "");
+      set("lab_plt", rec.lab_plt || "");
+      set("lab_bun", rec.lab_bun || "");
+      set("lab_cr", rec.lab_cr || "");
+      set("lab_pt", rec.lab_pt || "");
+      set("lab_ptt", rec.lab_ptt || "");
+      set("lab_inr", rec.lab_inr || "");
+      updateAllLabHighlighting();
+
+      const egfrDisplay = document.getElementById("egfr_display");
+      if (rec.egfr) {
+        egfrDisplay.textContent = "eGFR (CKD-EPI 2021): " + rec.egfr + " mL/min/1.73m²";
+        egfrDisplay.dataset.egfr = rec.egfr;
+      } else {
+        egfrDisplay.textContent = "eGFR (CKD-EPI 2021): —";
+        egfrDisplay.dataset.egfr = "";
+      }
+    }
+
+    function clearForm() {
+      recordToForm({
+        patient_code: "",
+        op_date: "",
+        age: "",
+        sex: "",
+        weight: "",
+        height: "",
+        bmi: "",
+        lvef: "",
+        dm: 0,
+        hba1c: "",
+        rrt: 0,
+        cad: 0,
+        hf: 0,
+        af: 0,
+        cld: 0,
+        malignancy: 0,
+        immunosuppression: 0,
+        infection_1m: 0,
+
+        anticoagulant_type: "None",
+        bridging: 0,
+
+        antiplatelet_agents: "",
+        ap_asa_hold_days: "",
+        ap_clopidogrel_hold_days: "",
+        ap_ticagrelor_hold_days: "",
+        ap_prasugrel_hold_days: "",
+
+        suture_type: "",
+        procedure_time: "",
+        pocket_location: "",
+        procedure_type: "",
+
+        fu_months: "",
+        lost_to_fu: 0,
+
+        composite_outcome: "",
+
+        so_infection: 0,
+        so_infection_detail: "",
+        so_hema_invasive: 0,
+        so_hema_invasive_detail: "",
+
+        lab_hb: "",
+        lab_wbc: "",
+        lab_plt: "",
+        lab_bun: "",
+        lab_cr: "",
+        lab_pt: "",
+        lab_ptt: "",
+        lab_inr: "",
+        egfr: ""
+      });
+    }
+
+    function refreshTable() {
+      const records = loadRecords();
+      const tbody = document.getElementById("recordsBody");
+      tbody.innerHTML = "";
+
+      records.forEach(rec => {
+        const tr = document.createElement("tr");
+        tr.className = "record-row";
+        tr.dataset.patientCode = rec.patient_code;
+
+        tr.innerHTML = `
+          <td>${rec.patient_code || ""}</td>
+          <td>${rec.op_date || ""}</td>
+          <td>${rec.suture_type || ""}</td>
+          <td>${rec.age || ""}</td>
+          <td>${rec.composite_outcome || ""}</td>
+        `;
+
+        tr.addEventListener("click", () => {
+          const found = loadRecords().find(r => r.patient_code === rec.patient_code);
+          if (found) {
+            recordToForm(found);
+            setStatus("Loaded record for patient code: " + rec.patient_code);
+          }
+        });
+
+        tbody.appendChild(tr);
+      });
+    }
+
+    function exportCSV() {
+      const records = loadRecords();
+      if (records.length === 0) {
+        setStatus("No records to export.", true);
+        return;
+      }
+
+      // Union of all keys across records (handles old + new fields safely)
+      const colSet = new Set();
+      records.forEach(r => Object.keys(r).forEach(k => colSet.add(k)));
+      const cols = Array.from(colSet);
+
+      const escape = value => {
+        if (value == null) return "";
+        const s = String(value);
+        if (s.includes(",") || s.includes("\n") || s.includes("\"")) {
+          return '"' + s.replace(/"/g, '""') + '"';
+        }
+        return s;
+      };
+
+      const lines = [];
+      lines.push(cols.join(","));
+      records.forEach(rec => {
+        const row = cols.map(c => escape(rec[c]));
+        lines.push(row.join(","));
+      });
+
+      const csvContent = lines.join("\n");
+      const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      const date = new Date().toISOString().slice(0, 10);
+      a.download = `cied_data_${date}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+
+      setStatus("CSV exported. Check your downloads.");
+    }
+
+    document.addEventListener("DOMContentLoaded", () => {
+      refreshTable();
+
+      document.getElementById("btnNew").addEventListener("click", () => {
+        clearForm();
+        setStatus("New blank record.");
+      });
+
+      document.getElementById("btnSave").addEventListener("click", () => {
+        const rec = formToRecord();
+        if (!rec) return;
+
+        let records = loadRecords();
+        const idx = records.findIndex(r => r.patient_code === rec.patient_code);
+        if (idx >= 0) {
+          records[idx] = rec;
+          setStatus("Record updated for patient code: " + rec.patient_code);
+        } else {
+          records.push(rec);
+          setStatus("New record saved for patient code: " + rec.patient_code);
+        }
+
+        saveRecords(records);
+        refreshTable();
+      });
+
+      document.getElementById("btnDelete").addEventListener("click", () => {
+        const code = document.getElementById("patient_code").value.trim();
+        if (!code) {
+          setStatus("No patient code specified to delete.", true);
+          return;
+        }
+        if (!confirm("Delete record for patient code: " + code + " ?")) return;
+
+        let records = loadRecords();
+        records = records.filter(r => r.patient_code !== code);
+        saveRecords(records);
+        refreshTable();
+        clearForm();
+        setStatus("Record deleted for patient code: " + code);
+      });
+
+      document.getElementById("btnExport").addEventListener("click", exportCSV);
+
+      document.getElementById("dm").addEventListener("change", toggleA1C);
+      document.getElementById("weight").addEventListener("input", updateBMI);
+      document.getElementById("height").addEventListener("input", updateBMI);
+
+      ["lab_hb","lab_wbc","lab_plt","lab_bun","lab_cr","lab_pt","lab_ptt","lab_inr"].forEach(id => {
+        document.getElementById(id).addEventListener("input", () => {
+          updateLabHighlight(id, id + "_label");
+          if (id === "lab_cr") updateEGFR();
+        });
+      });
+
+      document.getElementById("age").addEventListener("input", updateEGFR);
+      document.getElementById("sex").addEventListener("change", updateEGFR);
+
+      document.getElementById("op_date").addEventListener("input", formatOpDate);
+
+      // Antiplatelet checkboxes -> toggle each "days held" box
+      ["ap_asa","ap_clopidogrel","ap_ticagrelor","ap_prasugrel"].forEach(id => {
+        document.getElementById(id).addEventListener("change", updateAllAntiplateletHeldVisibility);
+      });
+      updateAllAntiplateletHeldVisibility();
+
+      // Secondary outcomes toggle detail box
+      document.getElementById("so_infection").addEventListener("change", () =>
+        toggleSecondaryDetail("so_infection", "so_infection_detail_container", "so_infection_detail", "so_infection_counter")
+      );
+      document.getElementById("so_hema_invasive").addEventListener("change", () =>
+        toggleSecondaryDetail("so_hema_invasive", "so_hema_invasive_detail_container", "so_hema_invasive_detail", "so_hema_invasive_counter")
+      );
+
+      // 50-word enforcement
+      document.getElementById("so_infection_detail").addEventListener("input", () =>
+        enforceMaxWords("so_infection_detail", "so_infection_counter", 50)
+      );
+      document.getElementById("so_hema_invasive_detail").addEventListener("input", () =>
+        enforceMaxWords("so_hema_invasive_detail", "so_hema_invasive_counter", 50)
+      );
+
+      // Init counters
+      updateWordCounter("so_infection_detail", "so_infection_counter", 50);
+      updateWordCounter("so_hema_invasive_detail", "so_hema_invasive_counter", 50);
+    });
+  </script>
+</body>
+</html>
